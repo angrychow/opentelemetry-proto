@@ -78,6 +78,97 @@ message ScopeSpans {
   // https://opentelemetry.io/docs/specs/otel/schemas/#schema-url
   // This schema_url applies to all spans and span events in the "spans" field.
   string schema_url = 3;
+  repeated MergedSpan mergedSpans = 4;
+}
+
+message MergedSpan {
+  opentelemetry.proto.common.v1.KeyValue attributes = 1;
+  repeated MergedSpan branch = 2;
+  repeated MergedSpanLeaf leaf = 3;
+}
+
+message MergedSpanLeaf {
+  bytes trace_id = 1;
+  bytes span_id = 2;
+  string trace_state = 3;
+  bytes parent_span_id = 4;
+  fixed32 flags = 16;
+  // string name = 5;
+  enum SpanKind {
+    // Unspecified. Do NOT use as default.
+    // Implementations MAY assume SpanKind to be INTERNAL when receiving UNSPECIFIED.
+    SPAN_KIND_UNSPECIFIED = 0;
+
+    // Indicates that the span represents an internal operation within an application,
+    // as opposed to an operation happening at the boundaries. Default value.
+    SPAN_KIND_INTERNAL = 1;
+
+    // Indicates that the span covers server-side handling of an RPC or other
+    // remote network request.
+    SPAN_KIND_SERVER = 2;
+
+    // Indicates that the span describes a request to some remote service.
+    SPAN_KIND_CLIENT = 3;
+
+    // Indicates that the span describes a producer sending a message to a broker.
+    // Unlike CLIENT and SERVER, there is often no direct critical path latency relationship
+    // between producer and consumer spans. A PRODUCER span ends when the message was accepted
+    // by the broker while the logical processing of the message might span a much longer time.
+    SPAN_KIND_PRODUCER = 4;
+
+    // Indicates that the span describes consumer receiving a message from a broker.
+    // Like the PRODUCER kind, there is often no direct critical path latency relationship
+    // between producer and consumer spans.
+    SPAN_KIND_CONSUMER = 5;
+  }
+  SpanKind kind = 6;
+  fixed64 start_time_unix_nano = 7;
+  fixed64 end_time_unix_nano = 8;
+  repeated opentelemetry.proto.common.v1.KeyValue attributes = 9;
+  uint32 dropped_attributes_count = 10;
+  message Event {
+    // time_unix_nano is the time the event occurred.
+    fixed64 time_unix_nano = 1;
+
+    // name of the event.
+    // This field is semantically required to be set to non-empty string.
+    string name = 2;
+
+    // attributes is a collection of attribute key/value pairs on the event.
+    // Attribute keys MUST be unique (it is not allowed to have more than one
+    // attribute with the same key).
+    repeated opentelemetry.proto.common.v1.KeyValue attributes = 3;
+
+    // dropped_attributes_count is the number of dropped attributes. If the value is 0,
+    // then no attributes were dropped.
+    uint32 dropped_attributes_count = 4;
+  }
+  repeated Event events = 11;
+  uint32 dropped_events_count = 12;
+  message Link {
+    // A unique identifier of a trace that this linked span is part of. The ID is a
+    // 16-byte array.
+    bytes trace_id = 1;
+
+    // A unique identifier for the linked span. The ID is an 8-byte array.
+    bytes span_id = 2;
+
+    // The trace_state associated with the link.
+    string trace_state = 3;
+
+    // attributes is a collection of attribute key/value pairs on the link.
+    // Attribute keys MUST be unique (it is not allowed to have more than one
+    // attribute with the same key).
+    repeated opentelemetry.proto.common.v1.KeyValue attributes = 4;
+
+    // dropped_attributes_count is the number of dropped attributes. If the value is 0,
+    // then no attributes were dropped.
+    uint32 dropped_attributes_count = 5;
+    fixed32 flags = 6;
+  }
+  repeated Link links = 13;
+  uint32 dropped_links_count = 14;
+  Status status = 15;
 }
 
 // A Span represents a single operation performed by a single component of the system.
